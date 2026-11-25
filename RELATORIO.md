@@ -7,11 +7,12 @@ Data: 25/11/2026. Ambiente de teste: Windows 11, Microsoft Edge (Chromium) via P
 | Item | Resultado |
 |---|---|
 | Comparação visual com as capturas oficiais (`testes/comparar.mjs`) | Não passa no Windows, **pelo mesmo motivo que o próprio protótipo não passa** (ver 1.1). Precisa rodar em Linux. |
-| Comparação ao vivo, site novo × protótipo na mesma máquina (`testes/comparar-ao-vivo.mjs`) | **24 de 24 idênticas: 0,000% de pixels diferentes**, mesma altura. |
-| Testes de comportamento da seção 7.2 (`testes/comportamento.spec.js`) | **16 de 16 passaram.** |
+| Comparação ao vivo, site novo × protótipo na mesma máquina (`testes/comparar-ao-vivo.mjs`) | **24 de 24 idênticas: 0,000% de pixels diferentes**, mesma altura, no port original. Depois dos ajustes da seção 6, o estudo de caso continua 0,000%. Na página inicial, a única diferença é a linha removida a seu pedido (ver 6.3). |
+| Testes de comportamento da seção 7.2 (`testes/comportamento.spec.js`) | **16 de 16 passaram**, antes e depois dos ajustes. |
 | Zero erros de JS e zero 4xx/5xx, sem rolagem horizontal (3 páginas × 2 idiomas × 6 tamanhos) | **6 de 6 passaram** (36 combinações). |
 | axe-core (`wcag2a`, `wcag2aa`, `best-practice`) | **3 de 3 páginas sem violações**, fora a exceção aceita do tambor. |
-| Lighthouse na URL publicada | **Não rodado:** o site ainda não foi publicado (ver "Pendências"). |
+| Site publicado | Agora em **`https://joaoricardo.vercel.app`** (subdomínio gratuito da Vercel, com `SITE_URL` configurada). Páginas, arquivos, URLs absolutas e cache conferidos (ver 2.1). |
+| Lighthouse no celular | **Antes dos ajustes, na URL publicada:** Performance 76–79, Acessibilidade 93 na inicial. **Depois dos ajustes, medido localmente:** Performance **92** na inicial e **95** no estudo de caso. A Acessibilidade da inicial continua em 93 por dois itens do próprio design (ver 2.2 e 6). Falta medir de novo na URL publicada. |
 
 ---
 
@@ -99,6 +100,53 @@ Saída completa em `testes/resultado-comportamento.txt`. Resumo: **25 passed (4.
 
 **Uma nota sobre o axe:** na página inicial, ele só fica limpo depois de rolar a página inteira. Antes disso, as palavras do manifesto ainda estão com opacidade .16 e o axe marca `color-contrast` nelas. O teste rola a página antes de analisar. Isso vale igualmente para o protótipo, então não é uma regressão.
 
+### 2.1 Site publicado
+
+Verificado em `https://portfolio-ochre-two-oudskgy1zq.vercel.app`:
+
+- **Respondem 200:** `/`, `/merlin.html`, `/merlin-en.html`, `/robots.txt`, `/sitemap.xml`, `/cv.pdf`, `/meus-direitos-pitch.mp4`, `/img/*.webp` e `/og.png`.
+- **URLs absolutas:** `og:image`, `og:url`, `canonical`, `hreflang` e o sitemap já usam o domínio da Vercel (`VERCEL_PROJECT_PRODUCTION_URL`). Quando houver domínio próprio, defina `SITE_URL` na Vercel e publique de novo.
+- **Cache:** `/img/*` com `public, max-age=31536000, immutable`; HTML com `public, max-age=0, must-revalidate`.
+
+### 2.2 Lighthouse no celular
+
+Lighthouse 13.6.0, perfil de celular, rodado desta máquina contra a URL publicada. Relatórios completos em `testes/lighthouse/*.report.html`.
+
+| Página | Performance | Acessibilidade | Boas práticas | SEO |
+|---|---|---|---|---|
+| `/` | **76** | **93** | 100 | 100 |
+| `/merlin.html` | **78** | 100 | 100 | 100 |
+| `/merlin-en.html` | **79** | 100 | 100 | 100 |
+| Meta (seção 7.3) | ≥ 90 | ≥ 95 | ≥ 95 | 100 |
+
+**Performance.**
+
+| Métrica | `/` | `/merlin.html` |
+|---|---|---|
+| First Contentful Paint | 1,3 s | 1,1 s |
+| Largest Contentful Paint | 1,3 s | 1,1 s |
+| Cumulative Layout Shift | 0,002 | 0,092 |
+| Speed Index | 3,4 s | 2,6 s |
+| **Total Blocking Time** | **1.050 ms** | **840 ms** |
+
+- O carregamento é rápido. O que derruba a nota é o **Total Blocking Time**, que é tempo de execução de JavaScript e de layout no carregamento:
+  - o chunk do GSAP, ScrollTrigger e Lenis (`lenis-*.js`) tem uma tarefa longa de 710 ms e cálculos de layout forçados, apontados pelo `forced-reflow-insight`;
+  - o script do portfólio (`index-*.js`), que monta o canvas da hero com o retrato em caracteres, tem cerca de 1,9 s de execução na CPU simulada.
+- **O que a seção 7.3 permite e o que foi feito:**
+  - compressão: a Vercel já serve com compressão;
+  - cache: já configurado no `vercel.json`;
+  - pré-carregamento: a foto da hero já é pré-carregada, como no protótipo. Pré-carregar a fonte melhoraria pouco o Speed Index e não mexe no TBT, então não foi feito.
+- **Conclusão:** chegar a 90 exige mudar o JavaScript, o que a regra 1 proíbe sem autorização. Sugestões, sem implementar:
+  - montar a camada de código do canvas da hero em `requestIdleCallback`, depois da primeira pintura;
+  - criar os ScrollTriggers depois do `load`, ou dentro de um `requestAnimationFrame`, para evitar os layouts forçados no carregamento.
+
+**Acessibilidade da página inicial (93).** Os três itens reprovados vêm do protótipo:
+
+1. **`color-contrast`:** as palavras do manifesto começam com opacidade 0,16 e só acendem com a rolagem. É o efeito, e o mesmo motivo do axe (ver seção 2).
+2. **`target-size`:** os nomes de trás do tambor (`button.nm`) são alvos de toque pequenos. É a exceção visual já aceita.
+3. **`label-content-name-mismatch`:** o botão mostra "EN", mas o `aria-label` é "Switch to English"; o logo tem `aria-label="Início"`. O estudo de caso tem o mesmo problema no botão de idioma, mas ali ele não chegou a derrubar a nota.
+   - **Sugestão:** começar o `aria-label` pelo texto visível (ex.: "EN, Switch to English"). Não muda nada no visual.
+
 ## 3. O que mudou em relação ao protótipo
 
 Só o que a seção 6 permite:
@@ -119,9 +167,11 @@ Só o que a seção 6 permite:
   - Sem ela, na Vercel, o build usa o domínio de produção do projeto (`VERCEL_PROJECT_PRODUCTION_URL`).
   - Fora da Vercel, cai em `http://localhost:4173`.
 
-## 4. Coisas estranhas ou que eu sugeriria mudar (nada implementado)
+## 4. Coisas estranhas ou que eu sugeriria mudar
 
-1. **Texto do Merlin desatualizado:** a ficha diz "O back-end acorda em até um minuto no primeiro acesso.", mas o back-end não dorme mais. Sugiro tirar essa linha.
+Os itens 1 e 5 e as sugestões de acessibilidade da seção 2.2 foram resolvidos depois, a seu pedido (ver seção 6). Os demais seguem só como observação.
+
+1. **Texto do Merlin desatualizado** *(resolvido na seção 6)*: a ficha dizia "O back-end acorda em até um minuto no primeiro acesso.", mas o back-end não dorme mais.
 2. **CSS do estudo de caso:** `merlin.html` e `merlin-en.html` tinham CSS idêntico, exceto o comentário da linha `VOICE`. Virou um único `src/styles/case.css` (com o comentário em inglês). Isso não muda o visual.
 3. **Nome do CSS de fontes no build:** o Vite agrupou o `fonts.css`, compartilhado pelas 3 páginas, num arquivo chamado `lenis-*.css`, por causa do chunk compartilhado. Funciona, só o nome engana.
 4. **Pesos da fonte:** o Google Fonts servia Archivo só de 300 a 900, com itálico. O arquivo do fontsource vai de 100 a 900, sem itálico. Nenhum texto usa itálico nem peso abaixo de 300, e a comparação ao vivo deu 0,000%.
@@ -129,14 +179,50 @@ Só o que a seção 6 permite:
 
 ## 5. Pendências (precisam de você)
 
-- **Publicação:**
-  - criar o repositório `JoaoRicardoSOC/portfolio` no GitHub;
-  - fazer os commits;
-  - ligar o deploy na Vercel.
+- **Publicação:** feita por você. Repositório `JoaoRicardoSOC/portfolio`, no ar em `https://joaoricardo.vercel.app`, com `SITE_URL` configurada.
+- **Publicar os ajustes da seção 6** (push) e medir o Lighthouse de novo na URL publicada.
+- **Capturas oficiais da página inicial:** com a linha do Merlin removida, as 12 capturas `home-*` de `capturas/` ficaram desatualizadas. Para o `comparar.mjs` voltar a valer na página inicial, gere capturas novas em Linux com o mesmo script.
+- **Comparação oficial em Linux** (`testes/comparar.mjs`), para cumprir o critério 7.1 à risca. Dá para rodar no GitHub Actions (`ubuntu-latest`).
+- **Domínio próprio:** se um dia comprar um, troque a `SITE_URL` na Vercel e publique de novo.
 
-  São ações públicas na sua conta, então não fiz sem confirmação.
-- **Lighthouse no celular,** na URL publicada.
-- **Comparação oficial em Linux** (`testes/comparar.mjs`), para cumprir o critério 7.1 à risca.
+## 6. Ajustes depois da publicação (autorizados pelo João)
+
+Depois do primeiro deploy, você pediu para resolver as pendências de código. Estas mudanças vão além da seção 6 do PEDIDO, por isso ficam registradas à parte.
+
+### 6.1 O que mudou
+
+1. **Camada de código da hero montada em tempo ocioso** (`src/main.js`):
+   - Antes, a função `ascii()` convertia o retrato em caracteres logo no carregamento, duas vezes: uma para o placeholder e outra para a foto. Era o maior bloco de JavaScript da página.
+   - Agora ela roda em `requestIdleCallback`, com limite de 1,5 s, e cada nova chamada cancela a anterior.
+   - Essa camada só aparece sob o pincel, que começa vazio. Por isso o que se vê não muda.
+2. **Pré-carregamento da fonte** Archivo (`<link rel="preload" as="font">`) nas 3 páginas. O Vite troca o caminho pelo arquivo com hash no build.
+3. **`aria-label` começando pelo texto visível,** para resolver o `label-content-name-mismatch`:
+   - botão de idioma: "EN, switch to English" e "PT, mudar para português", no HTML e no `applyLang`;
+   - logo: "João Ricardo, início".
+4. **Linha "O back-end acorda em até um minuto no primeiro acesso."** removida da ficha do Merlin, em PT e EN.
+
+### 6.2 Lighthouse no celular, medido localmente
+
+Build de produção servido em `localhost:4173`; mediana de 3 execuções por página.
+
+| Página | Antes: Performance | Antes: bloqueio | Depois: Performance | Depois: bloqueio |
+|---|---|---|---|---|
+| `/` | 83 | 651 ms | **92** | **300 ms** |
+| `/merlin.html` | 88 | 432 ms | **95** | **243 ms** |
+
+- **Por que os números locais são maiores que os da URL publicada** (76–79): a máquina e a rede são outras. O que importa é a comparação entre antes e depois, medidos do mesmo jeito.
+- **Acessibilidade da página inicial: continua 93.** Sobraram dois itens, e corrigi-los mudaria o visual:
+  - `color-contrast`: as palavras do manifesto começam com opacidade 0,16 até a rolagem acendê-las;
+  - `target-size`: os nomes de trás do tambor são alvos pequenos.
+
+### 6.3 Conferência visual e de comportamento
+
+- **Estudo de caso, PT e EN:** 12 de 12 capturas com 0,000% de diferença em relação ao protótipo.
+- **Página inicial:**
+  - Sem a linha do Merlin, a ficha ficou 28 a 48 px mais curta, e tudo abaixo dela subiu. As capturas dão de 4% a 7% de diferença, e a de 1920×1080 dá 0,3%.
+  - **Prova de que essa é a única diferença:** fiz um build de controle com todos os outros ajustes e a linha recolocada. Ele deu **24 de 24 capturas com 0,000%**. Ou seja, os itens 1 a 3 de 6.1 não mudam nenhum pixel.
+- **Efeito de código sob o cursor:** confirmado depois da mudança. Passando o mouse pela foto, aparecem 108 pixels violeta, contra 107 no protótipo.
+- **Testes de comportamento e axe:** 25 de 25 passaram (`testes/resultado-comportamento.txt`).
 
 ## Como rodar
 
