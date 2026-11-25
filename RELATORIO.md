@@ -12,7 +12,7 @@ Data: 25/11/2026. Ambiente de teste: Windows 11, Microsoft Edge (Chromium) via P
 | Zero erros de JS e zero 4xx/5xx, sem rolagem horizontal (3 páginas × 2 idiomas × 6 tamanhos) | **6 de 6 passaram** (36 combinações). |
 | axe-core (`wcag2a`, `wcag2aa`, `best-practice`) | **3 de 3 páginas sem violações**, fora a exceção aceita do tambor. |
 | Site publicado | Agora em **`https://joaoricardo.vercel.app`** (subdomínio gratuito da Vercel, com `SITE_URL` configurada). Páginas, arquivos, URLs absolutas e cache conferidos (ver 2.1). |
-| Lighthouse no celular | **Antes dos ajustes, na URL publicada:** Performance 76–79, Acessibilidade 93 na inicial. **Depois dos ajustes, medido localmente:** Performance **92** na inicial e **95** no estudo de caso. A Acessibilidade da inicial continua em 93 por dois itens do próprio design (ver 2.2 e 6). Falta medir de novo na URL publicada. |
+| Lighthouse no celular, na URL publicada | **Antes dos ajustes:** Performance 76–79, Acessibilidade 93 na inicial. **Depois dos ajustes:** Performance **92 / 100 / 92** (mediana de 3 execuções: inicial, Merlin PT, Merlin EN), Boas práticas 100 e SEO 100. A Acessibilidade da inicial continua em 93 por dois itens do próprio design; o estudo de caso tem 100 (ver 6.2). |
 
 ---
 
@@ -180,7 +180,6 @@ Os itens 1 e 5 e as sugestões de acessibilidade da seção 2.2 foram resolvidos
 ## 5. Pendências (precisam de você)
 
 - **Publicação:** feita por você. Repositório `JoaoRicardoSOC/portfolio`, no ar em `https://joaoricardo.vercel.app`, com `SITE_URL` configurada.
-- **Publicar os ajustes da seção 6** (push) e medir o Lighthouse de novo na URL publicada.
 - **Capturas oficiais da página inicial:** com a linha do Merlin removida, as 12 capturas `home-*` de `capturas/` ficaram desatualizadas. Para o `comparar.mjs` voltar a valer na página inicial, gere capturas novas em Linux com o mesmo script.
 - **Comparação oficial em Linux** (`testes/comparar.mjs`), para cumprir o critério 7.1 à risca. Dá para rodar no GitHub Actions (`ubuntu-latest`).
 - **Domínio próprio:** se um dia comprar um, troque a `SITE_URL` na Vercel e publique de novo.
@@ -210,7 +209,16 @@ Build de produção servido em `localhost:4173`; mediana de 3 execuções por p�
 | `/` | 83 | 651 ms | **92** | **300 ms** |
 | `/merlin.html` | 88 | 432 ms | **95** | **243 ms** |
 
-- **Por que os números locais são maiores que os da URL publicada** (76–79): a máquina e a rede são outras. O que importa é a comparação entre antes e depois, medidos do mesmo jeito.
+**Na URL publicada** (`https://joaoricardo.vercel.app`), depois do deploy dos ajustes. Mediana de 3 execuções:
+
+| Página | Performance antes | Performance depois | Bloqueio depois | Acessibilidade | Boas práticas | SEO |
+|---|---|---|---|---|---|---|
+| `/` | 76 | **92** | 311 ms | 93 | 100 | 100 |
+| `/merlin.html` | 78 | **100** | 35 ms | 100 | 100 | 100 |
+| `/merlin-en.html` | 79 | **92** | 326 ms | 100 | 100 | 100 |
+
+- Uma execução avulsa, com todas as categorias, deu 90, 95 e 100 nas três páginas. A Performance varia alguns pontos de uma execução para outra, por isso a tabela usa a mediana.
+- Relatórios completos em `testes/lighthouse/*.report.html`. Os de antes dos ajustes estão em `testes/lighthouse/antes/`.
 - **Acessibilidade da página inicial: continua 93.** Sobraram dois itens, e corrigi-los mudaria o visual:
   - `color-contrast`: as palavras do manifesto começam com opacidade 0,16 até a rolagem acendê-las;
   - `target-size`: os nomes de trás do tambor são alvos pequenos.

@@ -148,7 +148,7 @@ Escreva estes testes em Playwright (`testes/comportamento.spec.js`). Todos já p
 ### 7.3 Acessibilidade e qualidade
 
 - [ ] axe-core (`wcag2a`, `wcag2aa`, `best-practice`) sem violações nas 3 páginas, com uma exceção aceita: `color-contrast` nos nomes de trás do tambor, que ficam apagados de propósito.
-- [ ] Lighthouse no celular, na URL publicada: Performance ≥ 90, Acessibilidade ≥ 95, Boas práticas ≥ 95, SEO = 100. *(rodado: Performance 76–79, Acessibilidade 93 na inicial e 100 no estudo de caso, Boas práticas 100, SEO 100; ver RELATORIO.md 2.2)*
+- [ ] Lighthouse no celular, na URL publicada: Performance ≥ 90, Acessibilidade ≥ 95, Boas práticas ≥ 95, SEO = 100. *(depois dos ajustes da seção 6 do RELATORIO.md: Performance 92 / 100 / 92, Boas práticas 100, SEO 100 nas 3 páginas. A Acessibilidade fica em 100 no estudo de caso e em 93 na inicial, por dois itens do próprio design: o manifesto apagado e os nomes de trás do tambor. Ver RELATORIO.md 6.2)*
 - [x] Se a Performance ficar abaixo, ajuste só o que não muda o visual: pré-carregamento, compressão, cache. Relate o que fez. *(compressão e cache já ativos; o gargalo é o tempo de JS, fora do que esta regra permite; ver RELATORIO.md 2.2)*
 
 ## 8. Conteúdo
