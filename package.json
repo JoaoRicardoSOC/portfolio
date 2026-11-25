@@ -1,0 +1,26 @@
+{
+  "name": "portfolio-joao",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "comparar": "node testes/comparar.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource/nothing-you-could-do": "^5.3.0",
+    "gsap": "3.12.5",
+    "lenis": "1.1.13"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
+    "@playwright/test": "^1.65.1",
+    "pixelmatch": "^8.0.0",
+    "playwright": "^1.65.1",
+    "pngjs": "^7.0.0",
+    "vite": "^8.3.8"
+  }
+}

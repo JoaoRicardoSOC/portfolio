@@ -1,0 +1,16 @@
+/* Fontes auto-hospedadas (antes: Google Fonts). Arquivos dos pacotes @fontsource. */
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  src: url("../node_modules/@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Nothing You Could Do";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../node_modules/@fontsource/nothing-you-could-do/files/nothing-you-could-do-latin-400-normal.woff2") format("woff2");
+}

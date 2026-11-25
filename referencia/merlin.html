@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merlin Route Finder — Estudo de caso</title>
+<meta name="description" content="Estudo de caso do Merlin Route Finder: app com IA que guia o cliente da Leroy Merlin até a prateleira. 2º lugar no NEXT FIAP 2026.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Merlin Route Finder — Estudo de caso">
+<meta property="og:description" content="Estudo de caso do Merlin Route Finder: app com IA que guia o cliente da Leroy Merlin até a prateleira. 2º lugar no NEXT FIAP 2026.">
+<meta property="og:image" content="og-merlin.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23000'/%3E%3Cg transform='translate(2 8) scale(.42)'%3E%3Cpolygon points='20,72 34,72 50,8 36,8 26,48 20,48 16,62' fill='%23fff'/%3E%3Cpath d='M54,72 70,8 h26 a16,16 0 0 1 0,32 h-6 l12,32 h-15 l-11,-32 h-6 l-8,32z M74,20 l-3,12 h18 a6,6 0 0 0 0,-12z' fill='%23fff' fill-rule='evenodd' opacity='.6'/%3E%3Crect x='126' y='10' width='6' height='62' fill='%237c5cff' transform='skewX(-16)'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="alternate" hreflang="en" href="merlin-en.html">
+<script>try{var L=localStorage.getItem('lang');if(L==="en")location.replace('merlin-en.html')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,300..900;1,62..125,300..900&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: relatório de engenharia contado em primeira pessoa, curto e com números medidos.
+IDEA: a ficha de corrida de um piloto depois do GP: o problema, a estratégia, os pit stops e o resultado.
+PICTURE: diagramas próprios do sistema (arquitetura, ruptura) e o gráfico de latência medido em produção.
+COLOUR and TYPE: o mesmo do portfólio — preto, branco, violeta só em detalhes; Archivo condensado nos títulos.
+LAYOUT: coluna de leitura com faixas largas pros diagramas; índice fixo à esquerda acima de 1100px.
+*/
+:root{color-scheme:dark;--bg:#000;--ink:#fff;--mute:#8d8d93;--soft:#c9c9cf;--line:#232326;--panel:#0d0d0f;--vio:#7c5cff}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:80px}
+html.lenis,html.lenis body{height:auto}.lenis.lenis-smooth{scroll-behavior:auto!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 "Archivo",system-ui,sans-serif;overflow-x:clip}
+a{color:inherit}
+::selection{background:var(--vio);color:#fff}
+:focus-visible{outline:2px solid var(--vio);outline-offset:3px}
+.disp{font-weight:900;font-stretch:62%;text-transform:uppercase;line-height:.9;letter-spacing:-.01em;margin:0}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px max(5vw,16px);background:linear-gradient(#000 60%,transparent)}
+.back{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:600;font-size:15px;min-height:44px}
+.back span{transition:transform .3s}.back:hover span{transform:translateX(-4px)}
+.prog{position:fixed;top:0;left:0;height:2px;width:100%;background:var(--vio);transform-origin:0 0;transform:scaleX(0);z-index:21}
+.nl{display:flex;gap:18px;font-size:15px;align-items:center}
+.lang{appearance:none;background:none;border:1px solid #fff;color:#fff;border-radius:999px;padding:0 14px;min-height:44px;font:600 14px "Archivo",system-ui,sans-serif;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.lang:hover{background:#fff;color:#000}
+.nr{display:flex;align-items:center;gap:18px}
+.nl a{text-decoration:none;min-height:44px;display:inline-flex;align-items:center;font-weight:600;border-bottom:1px solid transparent}
+.nl a:hover{border-color:#fff}
+
+header{min-height:92svh;display:grid;grid-template-rows:1fr auto;padding:110px max(5vw,16px) 40px;border-bottom:1px solid var(--line)}
+.ttl{align-self:center}
+.kick{color:var(--mute);margin:0 0 18px;font-size:15px}
+h1{font-size:clamp(64px,13vw,210px)}
+h1 span{display:block;overflow:hidden;padding-top:.1em;margin-top:-.1em}h1 i{display:block;font-style:normal}
+.sum{font-size:clamp(20px,2vw,28px);line-height:1.3;max-width:34ch;margin:28px 0 0;font-weight:500;font-stretch:92%;text-wrap:balance}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--line);margin-top:40px}
+.facts div{padding:16px 16px 0 0}
+.facts dt{color:var(--mute);font-size:13px;margin-bottom:4px}.facts dd{margin:0;font-weight:600;font-size:15.5px}
+.facts .medal{display:inline-flex;align-items:center;gap:8px}
+.facts .medal::before{content:"";width:16px;height:16px;border-radius:50%;background:conic-gradient(from 200deg,#fff,#9a9aa6,#fff,#c9c9d2,#fff);box-shadow:inset 0 0 0 3px #000,0 0 0 1px #fff;flex:none}
+.acts{display:flex;flex-wrap:wrap;gap:12px 28px;margin-top:28px}
+.gh{display:inline-flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:600;font-size:16px;min-height:44px;border-bottom:1px solid #fff;padding:6px 0}
+.gh:hover{color:var(--vio);border-color:var(--vio)}
+@media(max-width:800px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.nl{display:none}}
+
+main{display:grid;grid-template-columns:220px minmax(0,1fr);gap:0 clamp(24px,5vw,80px);padding:0 max(5vw,16px);max-width:1400px;margin:0 auto}
+.toc{position:sticky;top:96px;align-self:start;padding-top:72px;font-size:14px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
+.toc a{display:block;padding:7px 0 7px 16px;margin-left:-1px;border-left:2px solid transparent;color:var(--mute);text-decoration:none}
+.toc a.on{color:#fff;border-color:var(--vio)}
+@media(max-width:1100px){main{grid-template-columns:1fr}.toc{display:none}}
+
+section{padding:72px 0;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{font-size:clamp(44px,5.6vw,84px);margin-bottom:28px}
+h3{font-size:clamp(20px,1.8vw,24px);font-weight:700;font-stretch:92%;margin:0 0 10px;line-height:1.2}
+.lede{font-size:clamp(19px,1.6vw,22px);line-height:1.45;color:#ececf0;max-width:42em;margin:0 0 24px}
+p{max-width:42em;margin:0 0 16px;color:var(--soft)}
+p b,li b{color:#fff;font-weight:600}
+.note{font-size:14px;color:var(--mute)}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.88em;background:#141418;border:1px solid var(--line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
+
+.pains{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--line);border:1px solid var(--line);margin-top:8px}
+.pains div{background:#000;padding:22px}
+.pains b{display:block;font-weight:900;font-stretch:62%;text-transform:uppercase;font-size:30px;line-height:1;margin-bottom:10px}
+.pains p{margin:0;font-size:15px}
+@media(max-width:800px){.pains{grid-template-columns:1fr}}
+
+.pivot{display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);align-items:stretch;gap:0;margin:8px 0 24px}
+.pivot .col{border:1px solid var(--line);border-radius:18px;padding:22px}
+.pivot .col.now{border-color:#fff}
+.pivot h3.pl{font-weight:600;line-height:1.3;margin:0 0 12px;font-size:14px;font-weight:600;color:var(--mute)}
+.pivot ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.pivot .old li{color:var(--mute);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.35)}
+.pivot .now li{color:#fff}
+.pivot .arrow{display:grid;place-items:center;color:var(--vio);font-size:28px}
+@media(max-width:800px){.pivot{grid-template-columns:1fr}.pivot .arrow{height:44px;transform:rotate(90deg)}}
+
+.steps{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;counter-reset:s}
+.steps li{border-top:2px solid #fff;padding-top:16px;counter-increment:s}
+.steps li::before{content:counter(s);display:block;font-weight:900;font-stretch:62%;font-size:44px;line-height:1;color:var(--vio);margin-bottom:10px}
+.steps p{font-size:15px;margin:0}
+@media(max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.steps{grid-template-columns:1fr}}
+
+/* diagrama de arquitetura */
+.arch{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;align-items:stretch;margin:8px 0 18px;position:relative}
+.node{border:1px solid #3a3a40;border-radius:16px;padding:16px;background:var(--panel);position:relative}
+.node small{display:block;color:var(--mute);font-size:12.5px;margin-bottom:6px}
+.node b{display:block;font-size:17px;margin-bottom:6px}
+.node span{display:block;font-size:13.5px;color:var(--soft);line-height:1.45}
+.node.key{border-color:#fff}
+.link{display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:12px;color:var(--mute);text-align:center;padding:0 6px}
+.link i{display:block;height:2px;width:100%;background:linear-gradient(90deg,#3a3a40,var(--vio));margin:6px 0;position:relative}
+.link i::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--vio)}
+.archrow{display:grid;grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr) 70px minmax(0,1.2fr) 70px minmax(0,1fr);align-items:center}
+.ext{display:grid;gap:12px}
+@media(max-width:900px){.archrow{grid-template-columns:1fr}.link{padding:6px 0;flex-direction:row;gap:10px}.link i{width:2px;height:28px;margin:0;background:linear-gradient(#3a3a40,var(--vio))}.link i::after{right:-4px;top:auto;bottom:-9px;border-left-color:transparent;border-top-color:var(--vio)}}
+
+/* desafios */
+.ch{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(20px,4vw,56px);padding:40px 0;border-top:1px solid var(--line)}
+.ch:first-of-type{border-top:0;padding-top:8px}
+.ch .tag{display:inline-block;font-size:13px;color:var(--vio);font-weight:600;margin-bottom:8px}
+@media(max-width:900px){.ch{grid-template-columns:1fr}}
+.pipe{display:grid;gap:10px}
+.pipe .st{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel)}
+.pipe .st em{font-style:normal;width:34px;height:34px;border-radius:50%;border:1px solid #fff;display:grid;place-items:center;font-weight:700;font-size:14px}
+.pipe .st b{display:block;font-size:15.5px}.pipe .st span{display:block;font-size:14px;color:var(--soft)}
+.pipe .st.fb{border-style:dashed;border-color:#3a3a40}.pipe .st.fb em{border-style:dashed;color:var(--mute)}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{text-align:left;color:var(--mute);font-weight:500;font-size:13px;padding:0 10px 10px 0;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px 10px 12px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl td.n{white-space:nowrap;font-variant-numeric:tabular-nums}
+.tbl tr.win td{color:#fff;font-weight:600}
+.bars{display:grid;gap:16px}
+.bar .lb{display:flex;justify-content:space-between;gap:12px;font-size:14px;margin-bottom:6px;flex-wrap:wrap}
+.bar .lb b{font-weight:600}.bar .lb span{color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar .tr{height:14px;border-radius:7px;background:#141418;overflow:hidden;position:relative}
+.bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:#5b5b61;transform-origin:0 0;transition:transform 1.1s cubic-bezier(.2,.9,.2,1)}
+.bar .rng{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 4px,transparent 4px 8px);border-radius:0 7px 7px 0}
+.bar.win .fill{background:var(--vio)}
+.bars.pre .fill{transform:scaleX(0)}
+.tries{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.tries li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;font-size:15px;color:var(--soft)}
+.tries li::before{content:"✕";color:var(--mute);font-weight:700;text-align:center}
+.tries li.ok::before{content:"✓";color:var(--vio)}
+.tries li b{color:#fff}
+
+.res{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:var(--line);border:1px solid var(--line);margin-top:8px}
+.res div{background:#000;padding:22px}
+.res b{display:block;font-weight:900;font-stretch:62%;font-size:clamp(44px,5vw,72px);line-height:1;margin-bottom:8px}
+.res span{display:block;font-size:14px;color:var(--soft)}
+@media(max-width:900px){.res{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lessons{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:0}
+.lessons li{padding:20px 0;border-top:1px solid var(--line)}
+.lessons li:first-child{border-top:0;padding-top:0}
+.lessons h3{margin-bottom:6px}.lessons p{margin:0;font-size:15.5px}
+
+.end{padding:90px 0 60px;text-align:left}
+.end h2{font-size:clamp(52px,8vw,120px)}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;color:var(--mute);font-size:14px;border-top:1px solid var(--line);padding:20px max(5vw,16px) 28px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.bars.pre .fill{transform:none}}
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<nav>
+  <a class="back" href="index.html#projetos"><span>←</span> Voltar ao portfólio</a>
+  <div class="nr"><div class="nl"><a href="https://merlin-route-finder.vercel.app/">Ver no ar ↗</a><a href="https://github.com/JoaoRicardoSOC/merlin-route-finder">Repositório ↗</a></div><a class="lang" id="lang" href="merlin-en.html" hreflang="en" aria-label="Switch to English">EN</a></div>
+</nav>
+
+<header>
+  <div class="ttl">
+    <p class="kick">Estudo de caso · Smart Retail Challenge, Leroy Merlin + FIAP · 2026</p>
+    <h1 class="disp"><span><i>Merlin</i></span><span><i>Route Finder</i></span></h1>
+    <p class="sum">Um app que leva o cliente da Leroy Merlin até a prateleira certa, responde dúvidas com IA e, quando o produto falta, oferece um substituto que existe de verdade no estoque.</p>
+  </div>
+  <div>
+    <dl class="facts">
+      <div><dt>Resultado</dt><dd class="medal">2º lugar no NEXT FIAP 2026</dd></div>
+      <div><dt>Meu papel</dt><dd>Arquitetura e back-end</dd></div>
+      <div><dt>Equipe</dt><dd>5 pessoas</dd></div>
+      <div><dt>Stack</dt><dd>Java 21 · Oracle 19c · Gemini · React 19</dd></div>
+    </dl>
+    <div class="acts">
+      <a class="gh" href="https://merlin-route-finder.vercel.app/">Ver o app no ar ↗</a>
+      <a class="gh" href="https://github.com/JoaoRicardoSOC/merlin-route-finder">Repositório ↗</a>
+      <a class="gh" href="https://github.com/JoaoRicardoSOC/merlin-route-finder/blob/main/backend/src/main/resources/openapi/openapi.yaml">Contrato OpenAPI ↗</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <aside class="toc" aria-label="Nesta página">
+    <ol id="toc">
+      <li><a href="#problema">O problema</a></li>
+      <li><a href="#virada">A virada</a></li>
+      <li><a href="#solucao">A solução</a></li>
+      <li><a href="#arquitetura">Arquitetura</a></li>
+      <li><a href="#decisoes">Decisões técnicas</a></li>
+      <li><a href="#resultados">Resultados</a></li>
+      <li><a href="#licoes">Lições</a></li>
+    </ol>
+  </aside>
+  <div>
+    <section id="problema">
+      <h2 class="disp">O problema</h2>
+      <p class="lede">Uma loja da Leroy Merlin chega a 10 mil metros quadrados, com milhares de produtos técnicos e clientes que vão do curioso ao pedreiro. O desafio da FIAP era melhorar essa jornada dentro da loja física usando IA. A Leroy Merlin mapeou três dores:</p>
+      <div class="pains">
+        <div><b>Último metro</b><p>Achar a prateleira exata num layout cheio de corredores e categorias.</p></div>
+        <div><b>Vocabulário</b><p>O cliente não sabe o nome técnico do que precisa, e o conhecimento fica com o vendedor.</p></div>
+        <div><b>Prateleira vazia</b><p>O produto acaba na gôndola, ninguém avisa, e a compra é abandonada.</p></div>
+      </div>
+    </section>
+
+    <section id="virada">
+      <h2 class="disp">A virada</h2>
+      <p class="lede">A primeira versão do projeto tinha um totem na entrada, uma rota calculada por algoritmo e a passagem do totem pro celular por um token JWT. Na mentoria de 24/08 com a Leroy Merlin, duas diretrizes simplificaram tudo.</p>
+      <div class="pivot">
+        <div class="col old"><h3 class="pl">Antes da mentoria</h3><ul><li>Totem físico na entrada da loja</li><li>Rota fixa (Nearest Neighbor + 2-opt)</li><li>Handoff com JWT de uso único</li><li>Dois aparelhos pra uma jornada</li></ul></div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="col now"><h3 class="pl">Depois da mentoria</h3><ul><li>QR code nas colunas dos corredores</li><li>O celular do cliente, sem instalar nada</li><li>O mapa mostra onde ele está e onde está cada item</li><li>O cliente escolhe o próprio caminho, e a compra por impulso continua viva</li></ul></div>
+      </div>
+      <p>Jogar fora o totem, a rota e o handoff já implementados doeu, mas deixou o produto muito mais perto do mundo real. O registro do raciocínio antigo ficou no repositório, porque a mudança de ideia faz parte da defesa do projeto.</p>
+    </section>
+
+    <section id="solucao">
+      <h2 class="disp">A solução</h2>
+      <p class="lede">Um app web pro celular, aberto direto pela câmera. A jornada tem quatro momentos:</p>
+      <ol class="steps">
+        <li><h3>Escaneia a coluna</h3><p>O QR code do corredor abre o app já sabendo onde o cliente está. Sem login, sem download.</p></li>
+        <li><h3>Busca do jeito que fala</h3><p>A busca tolera erro de digitação e acento, com <code>UTL_MATCH</code> e Jaro-Winkler no próprio Oracle.</p></li>
+        <li><h3>Vê no mapa</h3><p>Um mapa vetorial da loja mostra a posição do cliente e de cada item da lista.</p></li>
+        <li><h3>Pergunta ou relata</h3><p>O assistente responde dúvidas de obra. Prateleira vazia vira um substituto em estoque, a um toque.</p></li>
+      </ol>
+      <p style="margin-top:24px">Pra loja, cada relato de prateleira vazia vira um registro no banco: uma lista contínua de onde o estoque do sistema não bate com a gôndola, vinda de quem está olhando a prateleira.</p>
+    </section>
+
+    <section id="arquitetura">
+      <h2 class="disp">Arquitetura</h2>
+      <p class="lede">Front e back publicados separados, falando pelo mesmo domínio. O banco é o Oracle da FIAP, e a IA é o Gemini.</p>
+      <div class="archrow" role="img" aria-label="Celular acessa o app React na Vercel, que repassa /api para a API Java no Render, que consulta o Oracle 19c e o Gemini">
+        <div class="node"><small>Cliente</small><b>Celular</b><span>Navegador, aberto pelo QR code da coluna</span></div>
+        <div class="link">HTTPS<i></i></div>
+        <div class="node"><small>Vercel</small><b>React 19 + Vite</b><span>Mapa em SVG, cache local e fila offline. Repassa <code>/api</code> pro back-end</span></div>
+        <div class="link">rewrite /api<i></i></div>
+        <div class="node key"><small>Render · minha parte</small><b>API REST em Java 21</b><span>JAX-RS (Jersey + Grizzly), JDBC com DAO, 17 rotas descritas em OpenAPI 3.0, expiração de sessão agendada</span></div>
+        <div class="link">JDBC · HTTPS<i></i></div>
+        <div class="ext">
+          <div class="node"><small>FIAP</small><b>Oracle 19c</b><span>111 produtos reais, sessões e telemetria</span></div>
+          <div class="node"><small>Google</small><b>Gemini Flash-Lite</b><span>Function calling com escopo fechado</span></div>
+        </div>
+      </div>
+      <p style="margin-top:20px"><b>Uma mudança no meio do caminho.</b> O back-end nasceu em Spring Boot com arquitetura hexagonal: domínio sem framework, portas e adaptadores. Em novembro, o time decidiu reescrever tudo seguindo à risca a pilha ensinada no curso (JAX-RS, JDBC com DAO, sem Spring). A regra era não regredir, e foi medida: as mesmas rotas antes e depois, com 195 testes na suíte padrão e 351 na de integração passando contra o Oracle.</p>
+    </section>
+
+    <section id="decisoes">
+      <h2 class="disp">Decisões técnicas</h2>
+      <p class="lede">Quatro problemas que exigiram mais do que escrever código. O time registrou cerca de 100 decisões no repositório, cada uma com contexto, alternativas e custo.</p>
+
+      <div class="ch">
+        <div>
+          <span class="tag">IA sem alucinação</span>
+          <h3>O modelo escolhe, mas quem responde é o banco</h3>
+          <p>A ruptura de estoque é o centro da demonstração e o ponto onde uma IA inventando produto seria fatal. A solução tem três etapas, cada uma limitando a seguinte.</p>
+          <p>O texto do modelo nunca chega cru ao cliente: só sobrevive a justificativa, e o produto entregue é sempre o objeto vindo do nosso banco. Há um teste em que o modelo responde um SKU inventado, e o teste confere que o cliente recebe outro produto.</p>
+          <p class="note">Se nenhum candidato cumpre a mesma função, a resposta é "nenhum serve", e não um produto qualquer. Sugerir disjuntor pra quem procurava lixa é pior do que não sugerir nada.</p>
+        </div>
+        <div class="pipe">
+          <div class="st"><em>1</em><div><b>Pré-filtro espacial no Oracle</b><span>Só produtos com saldo, num raio do produto em falta, ordenados por distância</span></div></div>
+          <div class="st"><em>2</em><div><b>Escolha semântica pelo Gemini</b><span>Function calling entre esses candidatos, e só eles. A ferramenta nem recebe parâmetros</span></div></div>
+          <div class="st"><em>3</em><div><b>Validação contra a lista</b><span>O SKU só vale se estava entre os que nós oferecemos</span></div></div>
+          <div class="st fb"><em>↺</em><div><b>Plano B determinístico</b><span>IA fora do ar ou cota estourada: sugere o disponível mais próximo, com o rótulo honesto de "proximidade"</span></div></div>
+        </div>
+      </div>
+
+      <div class="ch">
+        <div>
+          <span class="tag">Medir antes de escolher</span>
+          <h3>O modelo mais caro era o pior pra esta tarefa</h3>
+          <p>A escolha óbvia era o topo de linha. Os testes de integração mostraram o contrário: ele raciocina antes de responder, demora mais de 20 segundos e tinha cota de 20 chamadas por dia no plano gratuito.</p>
+          <p>Pra escolher um produto de uma lista que nós fornecemos, esse raciocínio não agrega nada. O Flash-Lite responde em cerca de 1 segundo. A ferramenta do assistente também passou a aceitar vários termos numa chamada só: "o que preciso pra pintar?" caiu de quatro idas ao provedor pra duas.</p>
+        </div>
+        <div>
+          <table class="tbl">
+            <thead><tr><th>Modelo</th><th>Resposta</th><th>Cota gratuita</th></tr></thead>
+            <tbody>
+              <tr><td>Gemini Flash (topo)</td><td class="n">mais de 20 s</td><td>20 por dia</td></tr>
+              <tr class="win"><td>Gemini Flash-Lite</td><td class="n">~1 s</td><td>bem mais folgada</td></tr>
+            </tbody>
+          </table>
+          <p class="note" style="margin-top:12px">A listagem de modelos da API não informa latência nem cota. Só a chamada real informa.</p>
+        </div>
+      </div>
+
+      <div class="ch">
+        <div>
+          <span class="tag">Desempenho</span>
+          <h3>Um pool de conexões escrito à mão</h3>
+          <p>Sem Spring, o pool de conexões foi embora junto, e as rotas ficaram 2 a 3 vezes mais lentas em produção. A medição mostrou o motivo: abrir uma conexão com o Oracle custava cerca de 230 ms, o equivalente a onze consultas, e do servidor nos EUA passava de 1 segundo.</p>
+          <p>Como a regra da migração proibia bibliotecas fora do curso, o pool foi escrito em Java puro, respeitando o limite de 20 sessões do banco da FIAP: conexões ociosas fecham em 5 minutos, nenhuma vive mais de 25 e as paradas são testadas antes de usar. Ficou mais rápido do que a versão original com Spring.</p>
+        </div>
+        <div>
+          <div class="bars pre" id="bars">
+            <div class="bar"><div class="lb"><b>Spring Boot + HikariCP</b><span>883 ms</span></div><div class="tr"><div class="fill" style="width:39.5%"></div></div></div>
+            <div class="bar"><div class="lb"><b>JAX-RS sem pool</b><span>1.816 a 2.236 ms</span></div><div class="tr"><div class="fill" style="width:81.2%"></div><div class="rng" style="left:81.2%;width:18.8%"></div></div></div>
+            <div class="bar win"><div class="lb"><b>JAX-RS com o pool próprio</b><span>653 a 716 ms</span></div><div class="tr"><div class="fill" style="width:29.2%"></div><div class="rng" style="left:29.2%;width:2.8%"></div></div></div>
+          </div>
+          <p class="note" style="margin-top:14px">Busca de produtos (<code>GET /produtos?query=tinta</code>) medida em produção, no Render. A parte listrada é a variação entre medições.</p>
+        </div>
+      </div>
+
+      <div class="ch">
+        <div>
+          <span class="tag">Provar antes de corrigir</span>
+          <h3>O defeito que não existia</h3>
+          <p>Numa revisão de código, a gravação da lista de compras parecia perder dados quando duas requisições mexiam nela ao mesmo tempo. O mecanismo perigoso existia de verdade. A exigência do time foi: provar que a correção melhora algo, ou admitir que é placebo.</p>
+          <p>A correção chegou a ser implementada e foi revertida: não mudava nada observável e ainda criava um defeito próprio. Ficaram cinco testes que travam o comportamento verificado.</p>
+        </div>
+        <div>
+          <ul class="tries">
+            <li><span><b>Sondas no repositório</b> perdiam dados, mas em transações vazias que nenhum caso de uso real produz</span></li>
+            <li><span><b>Threads concorrentes</b> passavam com e sem a mudança. Corrida não é prova reproduzível</span></li>
+            <li><span><b>Contagem de linhas escritas</b>: 1 update nos dois lados, com 3 itens ou com 8</span></li>
+            <li class="ok"><span><b>Obsolescência forçada</b> numa transação controlada pelo teste: nada se perde. O sistema já estava correto</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultados">
+      <h2 class="disp">Resultados</h2>
+      <div class="res">
+        <div><b>2º</b><span>lugar no Smart Retail Challenge, premiado no NEXT FIAP 2026</span></div>
+        <div><b>365</b><span>testes de integração passando contra o Oracle, sem falhas</span></div>
+        <div><b>111</b><span>produtos reais da Leroy Merlin no catálogo, com posição no mapa</span></div>
+        <div><b style="white-space:nowrap;font-size:clamp(36px,3.8vw,60px)">0,4–0,7 s</b><span>de resposta da API em produção, depois que o servidor acorda</span></div>
+      </div>
+      <p style="margin-top:24px">Além da jornada do cliente, o sistema entrega dados pra operação da loja: relatos de ruptura que apontam estoque fantasma no ERP, as dúvidas técnicas que mais aparecem no chat (indicando onde treinar a equipe) e métricas de tempo em loja e abandono de lista.</p>
+    </section>
+
+    <section id="licoes">
+      <h2 class="disp">Lições</h2>
+      <p class="lede">O que ficou registrado como aprendizado, e o que eu faria diferente.</p>
+      <ol class="lessons">
+        <li><h3>Ler o código não é demonstrar o defeito</h3><p>Uma correção elegante pra um problema inexistente quase foi pro repositório, com uma justificativa bem escrita junto. A exigência de prova é o que separa engenharia de opinião.</p></li>
+        <li><h3>Medir a produção antes de migrar</h3><p>A migração pra JAX-RS foi validada em rotas e testes, mas o custo de abrir conexão com o banco só apareceu depois, em produção. Hoje eu mediria a latência real antes de tirar o pool, e não depois.</p></li>
+        <li><h3>Suíte verde que não diz o que deixou de rodar engana</h3><p>A suíte padrão chegou a mostrar "150 testes, 0 falhas" enquanto 8 testes de integração falhavam fora dela. Eu colocaria integração contínua rodando a suíte completa desde o primeiro dia.</p></li>
+        <li><h3>Quando o código não sabe, ele deve dizer</h3><p>O mesmo padrão apareceu cinco vezes: o código inventava um valor plausível em vez de admitir que não sabia (a sessão, a posição, a resposta da IA). A regra que ficou foi falhar em voz alta e mostrar ao cliente o que aconteceu.</p></li>
+      </ol>
+    </section>
+
+    <section class="end">
+      <h2 class="disp">Quer ver<br>rodando?</h2>
+      <div class="acts">
+        <a class="gh" href="https://merlin-route-finder.vercel.app/">Abrir o app ↗</a>
+        <a class="gh" href="https://github.com/JoaoRicardoSOC/merlin-route-finder">Ler o código ↗</a>
+        <a class="gh" href="index.html#projetos">← Outros projetos</a>
+      </div>
+      <p class="note" style="margin-top:18px">O back-end roda no plano gratuito do Render: se estiver parado, o primeiro acesso leva até um minuto.</p>
+    </section>
+  </div>
+</main>
+<footer><span>João Ricardo Soares de Oliveira Coto</span><a href="index.html#contato" style="text-decoration:none">Contato →</a></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+{
+document.getElementById('lang').addEventListener('click',()=>{try{localStorage.setItem('lang','en')}catch(e){}});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const hasG=!!window.gsap&&!!window.ScrollTrigger;
+let lenis=null;
+if(hasG)gsap.registerPlugin(ScrollTrigger);
+if(window.Lenis&&!reduce){lenis=new Lenis({lerp:.09});
+  if(hasG){lenis.on('scroll',ScrollTrigger.update);gsap.ticker.add(t=>lenis.raf(t*1000));gsap.ticker.lagSmoothing(0)}
+  else{const raf=t=>{lenis.raf(t);requestAnimationFrame(raf)};requestAnimationFrame(raf)}}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const t=document.querySelector(a.getAttribute('href'));if(!t)return;e.preventDefault();const y=t.getBoundingClientRect().top+scrollY-70;lenis?lenis.scrollTo(y):scrollTo({top:y,behavior:reduce?'auto':'smooth'})});
+/* entrada do título */
+if(hasG&&!reduce)gsap.from('h1 i',{yPercent:105,duration:1.1,ease:'expo.out',stagger:.1,delay:.1});
+/* progresso de leitura */
+const prog=document.getElementById('prog');
+const upd=()=>{const h=document.documentElement.scrollHeight-innerHeight;prog.style.transform=`scaleX(${h>0?scrollY/h:0})`};
+addEventListener('scroll',upd,{passive:true});upd();
+/* índice marca a seção atual */
+const links=[...document.querySelectorAll('#toc a')];
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))}})},{rootMargin:'-40% 0px -55% 0px'});
+document.querySelectorAll('main section[id]').forEach(s=>io.observe(s));
+/* barras crescem quando aparecem */
+const bars=document.getElementById('bars');
+new IntersectionObserver((es,o)=>{if(es[0].isIntersecting){bars.classList.remove('pre');o.disconnect()}},{threshold:.4}).observe(bars);
+}
+</script>
+</body>
+</html>

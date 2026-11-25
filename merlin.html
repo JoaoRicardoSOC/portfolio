@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merlin Route Finder — Estudo de caso</title>
+<meta name="description" content="Estudo de caso do Merlin Route Finder: app com IA que guia o cliente da Leroy Merlin até a prateleira. 2º lugar no NEXT FIAP 2026.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Merlin Route Finder — Estudo de caso">
+<meta property="og:description" content="Estudo de caso do Merlin Route Finder: app com IA que guia o cliente da Leroy Merlin até a prateleira. 2º lugar no NEXT FIAP 2026.">
+<meta property="og:image" content="%SITE_URL%/og-merlin.png">
+<meta property="og:url" content="%SITE_URL%/merlin.html">
+<link rel="canonical" href="%SITE_URL%/merlin.html">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23000'/%3E%3Cg transform='translate(2 8) scale(.42)'%3E%3Cpolygon points='20,72 34,72 50,8 36,8 26,48 20,48 16,62' fill='%23fff'/%3E%3Cpath d='M54,72 70,8 h26 a16,16 0 0 1 0,32 h-6 l12,32 h-15 l-11,-32 h-6 l-8,32z M74,20 l-3,12 h18 a6,6 0 0 0 0,-12z' fill='%23fff' fill-rule='evenodd' opacity='.6'/%3E%3Crect x='126' y='10' width='6' height='62' fill='%237c5cff' transform='skewX(-16)'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="alternate" hreflang="pt-BR" href="%SITE_URL%/merlin.html">
+<link rel="alternate" hreflang="en" href="%SITE_URL%/merlin-en.html">
+<script>try{var L=localStorage.getItem('lang');if(L==="en")location.replace('merlin-en.html')}catch(e){}</script>
+<link rel="stylesheet" href="/src/fonts.css">
+<link rel="stylesheet" href="/src/styles/case.css">
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<nav>
+  <a class="back" href="index.html#projetos"><span>←</span> Voltar ao portfólio</a>
+  <div class="nr"><div class="nl"><a href="https://merlin-route-finder.vercel.app/">Ver no ar ↗</a><a href="https://github.com/JoaoRicardoSOC/merlin-route-finder">Repositório ↗</a></div><a class="lang" id="lang" href="merlin-en.html" hreflang="en" aria-label="Switch to English">EN</a></div>
+</nav>
+
+<header>
+  <div class="ttl">
+    <p class="kick">Estudo de caso · Smart Retail Challenge, Leroy Merlin + FIAP · 2026</p>
+    <h1 class="disp"><span><i>Merlin</i></span><span><i>Route Finder</i></span></h1>
+    <p class="sum">Um app que leva o cliente da Leroy Merlin até a prateleira certa, responde dúvidas com IA e, quando o produto falta, oferece um substituto que existe de verdade no estoque.</p>
+  </div>
+  <div>
+    <dl class="facts">
+      <div><dt>Resultado</dt><dd class="medal">2º lugar no NEXT FIAP 2026</dd></div>
+      <div><dt>Meu papel</dt><dd>Arquitetura e back-end</dd></div>
+      <div><dt>Equipe</dt><dd>5 pessoas</dd></div>
+      <div><dt>Stack</dt><dd>Java 21 · Oracle 19c · Gemini · React 19</dd></div>
+    </dl>
+    <div class="acts">
+      <a class="gh" href="https://merlin-route-finder.vercel.app/">Ver o app no ar ↗</a>
+      <a class="gh" href="https://github.com/JoaoRicardoSOC/merlin-route-finder">Repositório ↗</a>
+      <a class="gh" href="https://github.com/JoaoRicardoSOC/merlin-route-finder/blob/main/backend/src/main/resources/openapi/openapi.yaml">Contrato OpenAPI ↗</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <aside class="toc" aria-label="Nesta página">
+    <ol id="toc">
+      <li><a href="#problema">O problema</a></li>
+      <li><a href="#virada">A virada</a></li>
+      <li><a href="#solucao">A solução</a></li>
+      <li><a href="#arquitetura">Arquitetura</a></li>
+      <li><a href="#decisoes">Decisões técnicas</a></li>
+      <li><a href="#resultados">Resultados</a></li>
+      <li><a href="#licoes">Lições</a></li>
+    </ol>
+  </aside>
+  <div>
+    <section id="problema">
+      <h2 class="disp">O problema</h2>
+      <p class="lede">Uma loja da Leroy Merlin chega a 10 mil metros quadrados, com milhares de produtos técnicos e clientes que vão do curioso ao pedreiro. O desafio da FIAP era melhorar essa jornada dentro da loja física usando IA. A Leroy Merlin mapeou três dores:</p>
+      <div class="pains">
+        <div><b>Último metro</b><p>Achar a prateleira exata num layout cheio de corredores e categorias.</p></div>
+        <div><b>Vocabulário</b><p>O cliente não sabe o nome técnico do que precisa, e o conhecimento fica com o vendedor.</p></div>
+        <div><b>Prateleira vazia</b><p>O produto acaba na gôndola, ninguém avisa, e a compra é abandonada.</p></div>
+      </div>
+    </section>
+
+    <section id="virada">
+      <h2 class="disp">A virada</h2>
+      <p class="lede">A primeira versão do projeto tinha um totem na entrada, uma rota calculada por algoritmo e a passagem do totem pro celular por um token JWT. Na mentoria de 24/08 com a Leroy Merlin, duas diretrizes simplificaram tudo.</p>
+      <div class="pivot">
+        <div class="col old"><h3 class="pl">Antes da mentoria</h3><ul><li>Totem físico na entrada da loja</li><li>Rota fixa (Nearest Neighbor + 2-opt)</li><li>Handoff com JWT de uso único</li><li>Dois aparelhos pra uma jornada</li></ul></div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="col now"><h3 class="pl">Depois da mentoria</h3><ul><li>QR code nas colunas dos corredores</li><li>O celular do cliente, sem instalar nada</li><li>O mapa mostra onde ele está e onde está cada item</li><li>O cliente escolhe o próprio caminho, e a compra por impulso continua viva</li></ul></div>
+      </div>
+      <p>Jogar fora o totem, a rota e o handoff já implementados doeu, mas deixou o produto muito mais perto do mundo real. O registro do raciocínio antigo ficou no repositório, porque a mudança de ideia faz parte da defesa do projeto.</p>
+    </section>
+
+    <section id="solucao">
+      <h2 class="disp">A solução</h2>
+      <p class="lede">Um app web pro celular, aberto direto pela câmera. A jornada tem quatro momentos:</p>
+      <ol class="steps">
+        <li><h3>Escaneia a coluna</h3><p>O QR code do corredor abre o app já sabendo onde o cliente está. Sem login, sem download.</p></li>
+        <li><h3>Busca do jeito que fala</h3><p>A busca tolera erro de digitação e acento, com <code>UTL_MATCH</code> e Jaro-Winkler no próprio Oracle.</p></li>
+        <li><h3>Vê no mapa</h3><p>Um mapa vetorial da loja mostra a posição do cliente e de cada item da lista.</p></li>
+        <li><h3>Pergunta ou relata</h3><p>O assistente responde dúvidas de obra. Prateleira vazia vira um substituto em estoque, a um toque.</p></li>
+      </ol>
+      <p style="margin-top:24px">Pra loja, cada relato de prateleira vazia vira um registro no banco: uma lista contínua de onde o estoque do sistema não bate com a gôndola, vinda de quem está olhando a prateleira.</p>
+    </section>
+
+    <section id="arquitetura">
+      <h2 class="disp">Arquitetura</h2>
+      <p class="lede">Front e back publicados separados, falando pelo mesmo domínio. O banco é o Oracle da FIAP, e a IA é o Gemini.</p>
+      <div class="archrow" role="img" aria-label="Celular acessa o app React na Vercel, que repassa /api para a API Java no Render, que consulta o Oracle 19c e o Gemini">
+        <div class="node"><small>Cliente</small><b>Celular</b><span>Navegador, aberto pelo QR code da coluna</span></div>
+        <div class="link">HTTPS<i></i></div>
+        <div class="node"><small>Vercel</small><b>React 19 + Vite</b><span>Mapa em SVG, cache local e fila offline. Repassa <code>/api</code> pro back-end</span></div>
+        <div class="link">rewrite /api<i></i></div>
+        <div class="node key"><small>Render · minha parte</small><b>API REST em Java 21</b><span>JAX-RS (Jersey + Grizzly), JDBC com DAO, 17 rotas descritas em OpenAPI 3.0, expiração de sessão agendada</span></div>
+        <div class="link">JDBC · HTTPS<i></i></div>
+        <div class="ext">
+          <div class="node"><small>FIAP</small><b>Oracle 19c</b><span>111 produtos reais, sessões e telemetria</span></div>
+          <div class="node"><small>Google</small><b>Gemini Flash-Lite</b><span>Function calling com escopo fechado</span></div>
+        </div>
+      </div>
+      <p style="margin-top:20px"><b>Uma mudança no meio do caminho.</b> O back-end nasceu em Spring Boot com arquitetura hexagonal: domínio sem framework, portas e adaptadores. Em novembro, o time decidiu reescrever tudo seguindo à risca a pilha ensinada no curso (JAX-RS, JDBC com DAO, sem Spring). A regra era não regredir, e foi medida: as mesmas rotas antes e depois, com 195 testes na suíte padrão e 351 na de integração passando contra o Oracle.</p>
+    </section>
+
+    <section id="decisoes">
+      <h2 class="disp">Decisões técnicas</h2>
+      <p class="lede">Quatro problemas que exigiram mais do que escrever código. O time registrou cerca de 100 decisões no repositório, cada uma com contexto, alternativas e custo.</p>
+
+      <div class="ch">
+        <div>
+          <span class="tag">IA sem alucinação</span>
+          <h3>O modelo escolhe, mas quem responde é o banco</h3>
+          <p>A ruptura de estoque é o centro da demonstração e o ponto onde uma IA inventando produto seria fatal. A solução tem três etapas, cada uma limitando a seguinte.</p>
+          <p>O texto do modelo nunca chega cru ao cliente: só sobrevive a justificativa, e o produto entregue é sempre o objeto vindo do nosso banco. Há um teste em que o modelo responde um SKU inventado, e o teste confere que o cliente recebe outro produto.</p>
+          <p class="note">Se nenhum candidato cumpre a mesma função, a resposta é "nenhum serve", e não um produto qualquer. Sugerir disjuntor pra quem procurava lixa é pior do que não sugerir nada.</p>
+        </div>
+        <div class="pipe">
+          <div class="st"><em>1</em><div><b>Pré-filtro espacial no Oracle</b><span>Só produtos com saldo, num raio do produto em falta, ordenados por distância</span></div></div>
+          <div class="st"><em>2</em><div><b>Escolha semântica pelo Gemini</b><span>Function calling entre esses candidatos, e só eles. A ferramenta nem recebe parâmetros</span></div></div>
+          <div class="st"><em>3</em><div><b>Validação contra a lista</b><span>O SKU só vale se estava entre os que nós oferecemos</span></div></div>
+          <div class="st fb"><em>↺</em><div><b>Plano B determinístico</b><span>IA fora do ar ou cota estourada: sugere o disponível mais próximo, com o rótulo honesto de "proximidade"</span></div></div>
+        </div>
+      </div>
+
+      <div class="ch">
+        <div>
+          <span class="tag">Medir antes de escolher</span>
+          <h3>O modelo mais caro era o pior pra esta tarefa</h3>
+          <p>A escolha óbvia era o topo de linha. Os testes de integração mostraram o contrário: ele raciocina antes de responder, demora mais de 20 segundos e tinha cota de 20 chamadas por dia no plano gratuito.</p>
+          <p>Pra escolher um produto de uma lista que nós fornecemos, esse raciocínio não agrega nada. O Flash-Lite responde em cerca de 1 segundo. A ferramenta do assistente também passou a aceitar vários termos numa chamada só: "o que preciso pra pintar?" caiu de quatro idas ao provedor pra duas.</p>
+        </div>
+        <div>
+          <table class="tbl">
+            <thead><tr><th>Modelo</th><th>Resposta</th><th>Cota gratuita</th></tr></thead>
+            <tbody>
+              <tr><td>Gemini Flash (topo)</td><td class="n">mais de 20 s</td><td>20 por dia</td></tr>
+              <tr class="win"><td>Gemini Flash-Lite</td><td class="n">~1 s</td><td>bem mais folgada</td></tr>
+            </tbody>
+          </table>
+          <p class="note" style="margin-top:12px">A listagem de modelos da API não informa latência nem cota. Só a chamada real informa.</p>
+        </div>
+      </div>
+
+      <div class="ch">
+        <div>
+          <span class="tag">Desempenho</span>
+          <h3>Um pool de conexões escrito à mão</h3>
+          <p>Sem Spring, o pool de conexões foi embora junto, e as rotas ficaram 2 a 3 vezes mais lentas em produção. A medição mostrou o motivo: abrir uma conexão com o Oracle custava cerca de 230 ms, o equivalente a onze consultas, e do servidor nos EUA passava de 1 segundo.</p>
+          <p>Como a regra da migração proibia bibliotecas fora do curso, o pool foi escrito em Java puro, respeitando o limite de 20 sessões do banco da FIAP: conexões ociosas fecham em 5 minutos, nenhuma vive mais de 25 e as paradas são testadas antes de usar. Ficou mais rápido do que a versão original com Spring.</p>
+        </div>
+        <div>
+          <div class="bars pre" id="bars">
+            <div class="bar"><div class="lb"><b>Spring Boot + HikariCP</b><span>883 ms</span></div><div class="tr"><div class="fill" style="width:39.5%"></div></div></div>
+            <div class="bar"><div class="lb"><b>JAX-RS sem pool</b><span>1.816 a 2.236 ms</span></div><div class="tr"><div class="fill" style="width:81.2%"></div><div class="rng" style="left:81.2%;width:18.8%"></div></div></div>
+            <div class="bar win"><div class="lb"><b>JAX-RS com o pool próprio</b><span>653 a 716 ms</span></div><div class="tr"><div class="fill" style="width:29.2%"></div><div class="rng" style="left:29.2%;width:2.8%"></div></div></div>
+          </div>
+          <p class="note" style="margin-top:14px">Busca de produtos (<code>GET /produtos?query=tinta</code>) medida em produção, no Render. A parte listrada é a variação entre medições.</p>
+        </div>
+      </div>
+
+      <div class="ch">
+        <div>
+          <span class="tag">Provar antes de corrigir</span>
+          <h3>O defeito que não existia</h3>
+          <p>Numa revisão de código, a gravação da lista de compras parecia perder dados quando duas requisições mexiam nela ao mesmo tempo. O mecanismo perigoso existia de verdade. A exigência do time foi: provar que a correção melhora algo, ou admitir que é placebo.</p>
+          <p>A correção chegou a ser implementada e foi revertida: não mudava nada observável e ainda criava um defeito próprio. Ficaram cinco testes que travam o comportamento verificado.</p>
+        </div>
+        <div>
+          <ul class="tries">
+            <li><span><b>Sondas no repositório</b> perdiam dados, mas em transações vazias que nenhum caso de uso real produz</span></li>
+            <li><span><b>Threads concorrentes</b> passavam com e sem a mudança. Corrida não é prova reproduzível</span></li>
+            <li><span><b>Contagem de linhas escritas</b>: 1 update nos dois lados, com 3 itens ou com 8</span></li>
+            <li class="ok"><span><b>Obsolescência forçada</b> numa transação controlada pelo teste: nada se perde. O sistema já estava correto</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultados">
+      <h2 class="disp">Resultados</h2>
+      <div class="res">
+        <div><b>2º</b><span>lugar no Smart Retail Challenge, premiado no NEXT FIAP 2026</span></div>
+        <div><b>365</b><span>testes de integração passando contra o Oracle, sem falhas</span></div>
+        <div><b>111</b><span>produtos reais da Leroy Merlin no catálogo, com posição no mapa</span></div>
+        <div><b style="white-space:nowrap;font-size:clamp(36px,3.8vw,60px)">0,4–0,7 s</b><span>de resposta da API em produção, depois que o servidor acorda</span></div>
+      </div>
+      <p style="margin-top:24px">Além da jornada do cliente, o sistema entrega dados pra operação da loja: relatos de ruptura que apontam estoque fantasma no ERP, as dúvidas técnicas que mais aparecem no chat (indicando onde treinar a equipe) e métricas de tempo em loja e abandono de lista.</p>
+    </section>
+
+    <section id="licoes">
+      <h2 class="disp">Lições</h2>
+      <p class="lede">O que ficou registrado como aprendizado, e o que eu faria diferente.</p>
+      <ol class="lessons">
+        <li><h3>Ler o código não é demonstrar o defeito</h3><p>Uma correção elegante pra um problema inexistente quase foi pro repositório, com uma justificativa bem escrita junto. A exigência de prova é o que separa engenharia de opinião.</p></li>
+        <li><h3>Medir a produção antes de migrar</h3><p>A migração pra JAX-RS foi validada em rotas e testes, mas o custo de abrir conexão com o banco só apareceu depois, em produção. Hoje eu mediria a latência real antes de tirar o pool, e não depois.</p></li>
+        <li><h3>Suíte verde que não diz o que deixou de rodar engana</h3><p>A suíte padrão chegou a mostrar "150 testes, 0 falhas" enquanto 8 testes de integração falhavam fora dela. Eu colocaria integração contínua rodando a suíte completa desde o primeiro dia.</p></li>
+        <li><h3>Quando o código não sabe, ele deve dizer</h3><p>O mesmo padrão apareceu cinco vezes: o código inventava um valor plausível em vez de admitir que não sabia (a sessão, a posição, a resposta da IA). A regra que ficou foi falhar em voz alta e mostrar ao cliente o que aconteceu.</p></li>
+      </ol>
+    </section>
+
+    <section class="end">
+      <h2 class="disp">Quer ver<br>rodando?</h2>
+      <div class="acts">
+        <a class="gh" href="https://merlin-route-finder.vercel.app/">Abrir o app ↗</a>
+        <a class="gh" href="https://github.com/JoaoRicardoSOC/merlin-route-finder">Ler o código ↗</a>
+        <a class="gh" href="index.html#projetos">← Outros projetos</a>
+      </div>
+      <p class="note" style="margin-top:18px">O back-end roda no plano gratuito do Render: se estiver parado, o primeiro acesso leva até um minuto.</p>
+    </section>
+  </div>
+</main>
+<footer><span>João Ricardo Soares de Oliveira Coto</span><a href="index.html#contato" style="text-decoration:none">Contato →</a></footer>
+
+<script type="module" src="/src/case-pt.js"></script>
+</body>
+</html>
